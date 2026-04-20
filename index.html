@@ -159,7 +159,7 @@ async function fetchWithFallback(apiUrl) {
       if (!r.ok) continue;
       const data = await r.json();
       if (Array.isArray(data) && data.length > 0) return data;
-    } catch { /* weiter */ }
+    } catch(err) { console.warn('Proxy-Fehler:', err?.message); }
   }
   throw new Error('Verbindung zu e-control.at fehlgeschlagen. Bitte Internetverbindung prüfen oder später erneut versuchen.');
 }
@@ -190,7 +190,7 @@ async function load() {
 
       const station = {
         name: s.name,
-        address: `${s.location.address}, ${s.location.postalCode} ${s.location.city}`,
+        address: [s.location.address, [s.location.postalCode, s.location.city].filter(Boolean).join(' ')].filter(Boolean).join(', '),
         price: sup.amount,
         distance_km: dist,
       };
@@ -205,7 +205,11 @@ async function load() {
 
     // Winner
     const best = stations[0];
-    document.getElementById('wPrice').innerHTML = fmt(best.price) + ' <span>€/L</span>';
+    const wPriceEl = document.getElementById('wPrice');
+    wPriceEl.textContent = '';
+    const wSpan = document.createElement('span');
+    wSpan.textContent = '€/L';
+    wPriceEl.append(fmt(best.price) + ' ', wSpan);
     document.getElementById('wName').textContent = best.name;
     document.getElementById('wAddr').textContent = best.address;
     document.getElementById('wDist').textContent = `→ ${best.distance_km.toFixed(1)} km entfernt`;
@@ -220,11 +224,11 @@ async function load() {
       if (diff > 0.001) {
         el.textContent = `Brenner: +${fmt(diffAbs)} €/L teurer`;
         el.className = 'bdiff red';
-        document.getElementById('bSave').textContent = `Du sparst ~${(diffAbs*LITERS).toFixed(2).replace('.',',')} € pro ${LITERS}L`;
+        document.getElementById('bSave').textContent = `Du sparst ~${(diffAbs*LITERS).toLocaleString('de-AT',{minimumFractionDigits:2,maximumFractionDigits:2})} € pro ${LITERS}L`;
       } else if (diff < -0.001) {
         el.textContent = `Brenner: −${fmt(diffAbs)} €/L günstiger`;
         el.className = 'bdiff green';
-        document.getElementById('bSave').textContent = `Bei Brenner sparst du ~${(diffAbs*LITERS).toFixed(2).replace('.',',')} € pro ${LITERS}L`;
+        document.getElementById('bSave').textContent = `Bei Brenner sparst du ~${(diffAbs*LITERS).toLocaleString('de-AT',{minimumFractionDigits:2,maximumFractionDigits:2})} € pro ${LITERS}L`;
       } else {
         el.textContent = '= gleicher Preis';
         el.className = 'bdiff grey';
@@ -241,10 +245,13 @@ async function load() {
       const d = document.createElement('div');
       d.className = 'scard' + (i===0?' best':'');
       d.style.animationDelay = `${i*40}ms`;
-      d.innerHTML = `<div class="sname">${s.name}</div>
-        <div class="sprice">${fmt(s.price)} <span class="sunit">€/L</span></div>
-        <div class="saddr">${s.address}</div>
-        <div class="sdist">${s.distance_km.toFixed(1)} km</div>`;
+      const sname = document.createElement('div'); sname.className = 'sname'; sname.textContent = s.name;
+      const sprice = document.createElement('div'); sprice.className = 'sprice';
+      const sunit = document.createElement('span'); sunit.className = 'sunit'; sunit.textContent = '€/L';
+      sprice.append(fmt(s.price) + ' ', sunit);
+      const saddr = document.createElement('div'); saddr.className = 'saddr'; saddr.textContent = s.address;
+      const sdist = document.createElement('div'); sdist.className = 'sdist'; sdist.textContent = s.distance_km.toFixed(1) + ' km';
+      d.append(sname, sprice, saddr, sdist);
       list.appendChild(d);
     });
 
