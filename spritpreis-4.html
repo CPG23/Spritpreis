@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0d0f0e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Spritpreise">
+<link rel="manifest" href="data:application/json,{&quot;name&quot;:&quot;Spritpreise&quot;,&quot;short_name&quot;:&quot;Sprit&quot;,&quot;start_url&quot;:&quot;.&quot;,&quot;display&quot;:&quot;standalone&quot;,&quot;background_color&quot;:&quot;%230d0f0e&quot;,&quot;theme_color&quot;:&quot;%230d0f0e&quot;}">
+<title>Spritpreise</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#0d0f0e; --card:#1c2120; --border:#2a3230;
+    --accent:#5dffb0; --accent2:#ff6b35; --text:#e8f0ed; --muted:#6b8078;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;min-height:100vh;}
+  body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+    background-image:linear-gradient(rgba(93,255,176,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(93,255,176,.03) 1px,transparent 1px);
+    background-size:40px 40px;}
+  .wrap{max-width:720px;margin:0 auto;padding:40px 20px 60px;position:relative;z-index:1;}
+  .label{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);margin-bottom:8px;opacity:.8;}
+  h1{font-family:'Syne',sans-serif;font-size:clamp(28px,6vw,46px);font-weight:800;line-height:1.05;letter-spacing:-.02em;}
+  h1 span{color:var(--accent);}
+  .sub{margin-top:10px;color:var(--muted);font-size:12px;letter-spacing:.05em;min-height:18px;}
+  header{margin-bottom:40px;}
+  .controls{display:flex;gap:12px;margin-bottom:32px;flex-wrap:wrap;align-items:center;}
+  .rbtn{background:var(--card);border:1px solid var(--border);color:var(--muted);font-family:'DM Mono',monospace;font-size:12px;padding:7px 14px;cursor:pointer;transition:all .15s;border-radius:4px;}
+  .rbtn.active,.rbtn:hover{border-color:var(--accent);color:var(--accent);background:rgba(93,255,176,.08);}
+  .rbtn:disabled{opacity:.4;cursor:not-allowed;}
+  .refresh{background:var(--accent);border:none;color:var(--bg);font-family:'Syne',sans-serif;font-size:13px;font-weight:700;padding:8px 20px;cursor:pointer;border-radius:4px;transition:all .15s;margin-left:auto;letter-spacing:.05em;text-transform:uppercase;}
+  .refresh:hover{background:#7fffca;transform:translateY(-1px);}
+  .refresh:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+  .err{background:rgba(255,107,53,.08);border:1px solid rgba(255,107,53,.3);border-radius:6px;padding:14px 18px;font-size:12px;color:var(--accent2);margin-bottom:20px;line-height:1.7;display:none;}
+  .err.show{display:block;}
+  .winner{background:linear-gradient(135deg,rgba(93,255,176,.12),rgba(93,255,176,.04));border:1px solid rgba(93,255,176,.3);border-radius:8px;padding:20px 24px;margin-bottom:28px;display:none;animation:slideIn .4s ease;}
+  .winner.show{display:block;}
+  .wtag{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);margin-bottom:6px;}
+  .wprice{font-family:'Syne',sans-serif;font-size:48px;font-weight:800;color:var(--accent);letter-spacing:-.03em;line-height:1;}
+  .wprice span{font-size:20px;opacity:.7;}
+  .wname{font-family:'Syne',sans-serif;font-size:14px;font-weight:500;color:var(--text);margin-top:8px;}
+  .waddr{font-size:11px;color:var(--muted);margin-top:3px;}
+  .wdist{font-size:11px;color:var(--accent2);margin-top:4px;letter-spacing:.05em;}
+  .bcmp{margin-top:16px;padding-top:14px;border-top:1px solid rgba(93,255,176,.15);display:none;align-items:center;gap:14px;flex-wrap:wrap;}
+  .bcmp.show{display:flex;}
+  .blbl{font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);flex-shrink:0;}
+  .bprice{font-family:'Syne',sans-serif;font-size:20px;font-weight:700;color:var(--text);white-space:nowrap;}
+  .bdiff{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;padding:3px 10px;border-radius:4px;white-space:nowrap;}
+  .bdiff.red{background:rgba(255,107,53,.15);color:var(--accent2);}
+  .bdiff.green{background:rgba(93,255,176,.15);color:var(--accent);}
+  .bdiff.grey{background:rgba(255,255,255,.06);color:var(--muted);}
+  .bsave{font-size:11px;color:var(--muted);margin-left:auto;white-space:nowrap;}
+  .rh{display:none;justify-content:space-between;align-items:baseline;margin-bottom:12px;}
+  .rh.show{display:flex;}
+  .rcnt{font-size:11px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;}
+  .rsort{font-size:10px;color:var(--muted);}
+  .list{display:flex;flex-direction:column;gap:8px;}
+  .scard{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:14px 18px;display:grid;grid-template-columns:1fr auto;gap:4px 16px;align-items:center;animation:fadeUp .3s ease both;transition:border-color .15s;}
+  .scard:hover{border-color:rgba(93,255,176,.2);}
+  .scard.best{border-color:rgba(93,255,176,.4);background:linear-gradient(135deg,rgba(93,255,176,.06),var(--card));}
+  .scard.best::before{content:'★ GÜNSTIGSTE';font-size:9px;letter-spacing:.18em;color:var(--accent);display:block;grid-column:1/-1;margin-bottom:4px;}
+  .sname{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--text);}
+  .saddr{font-size:11px;color:var(--muted);}
+  .sdist{font-size:10px;color:var(--accent2);letter-spacing:.05em;}
+  .sprice{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;text-align:right;grid-row:1/3;align-self:center;white-space:nowrap;}
+  .scard.best .sprice{color:var(--accent);}
+  .sunit{font-size:11px;font-family:'DM Mono',monospace;color:var(--muted);font-weight:400;}
+  .loading{text-align:center;padding:60px 20px;color:var(--muted);font-size:13px;display:none;}
+  .loading.show{display:block;}
+  .spinner{width:28px;height:28px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px;}
+  .lstep{font-size:11px;color:var(--muted);margin-top:8px;}
+  .empty{text-align:center;padding:60px 20px;color:var(--muted);font-size:13px;display:none;}
+  .empty.show{display:block;}
+  .ts{font-size:10px;color:var(--muted);text-align:right;margin-top:20px;letter-spacing:.05em;}
+  /* GPS permission box */
+  .gps-box{background:rgba(93,255,176,.06);border:1px solid rgba(93,255,176,.25);border-radius:8px;padding:20px 24px;margin-bottom:28px;display:none;}
+  .gps-box.show{display:block;}
+  .gps-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--text);margin-bottom:8px;}
+  .gps-text{font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:14px;}
+  .gps-btn{background:var(--accent);border:none;color:var(--bg);font-family:'Syne',sans-serif;font-size:13px;font-weight:700;padding:9px 22px;cursor:pointer;border-radius:4px;letter-spacing:.05em;text-transform:uppercase;}
+  .gps-btn:hover{background:#7fffca;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+  @keyframes slideIn{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:translateY(0);}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="label">⛽ Spritpreise Echtzeit</div>
+    <h1>Super <span>95</span><br>Tankstellen</h1>
+    <div class="sub" id="locationSub">📍 Standort wird ermittelt …</div>
+  </header>
+
+  <div class="controls">
+    <div style="display:flex;gap:6px;">
+      <button class="rbtn" data-km="5">5 km</button>
+      <button class="rbtn active" data-km="10">10 km</button>
+      <button class="rbtn" data-km="15">15 km</button>
+    </div>
+    <button class="refresh" id="refreshBtn" onclick="startLoad()">↻ Aktualisieren</button>
+  </div>
+
+  <!-- GPS permission box -->
+  <div class="gps-box" id="gpsBox">
+    <div class="gps-title">📍 Standortzugriff benötigt</div>
+    <div class="gps-text">Die App benötigt deinen Standort um Tankstellen in deiner Nähe zu finden. Dein Standort wird nicht gespeichert oder übertragen.</div>
+    <button class="gps-btn" onclick="requestGPS()">Standort freigeben</button>
+  </div>
+
+  <div class="err" id="errBox"></div>
+
+  <div class="winner" id="winner">
+    <div class="wtag">▼ Günstigste Tankstelle in deiner Nähe</div>
+    <div class="wprice" id="wPrice"></div>
+    <div class="wname" id="wName"></div>
+    <div class="waddr" id="wAddr"></div>
+    <div class="wdist" id="wDist"></div>
+    <div class="bcmp" id="bcmp">
+      <div class="blbl">⛽ Brenner</div>
+      <div class="bprice" id="bPrice"></div>
+      <div class="bdiff" id="bDiff"></div>
+      <div class="bsave" id="bSave"></div>
+    </div>
+  </div>
+
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <div>Lade Spritpreise …</div>
+    <div class="lstep" id="lstep"></div>
+  </div>
+
+  <div class="empty" id="empty">🔍 Keine Tankstellen im gewählten Radius gefunden.</div>
+
+  <div class="rh" id="rh">
+    <div class="rcnt" id="rcnt"></div>
+    <div class="rsort">sortiert nach Preis ↑</div>
+  </div>
+  <div class="list" id="list"></div>
+  <div class="ts" id="ts"></div>
+</div>
+
+<script>
+let userLat = null, userLng = null, radius = 10;
+const LITERS = 50;
+
+document.querySelectorAll('.rbtn').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('.rbtn').forEach(x => x.classList.remove('active'));
+  b.classList.add('active');
+  radius = +b.dataset.km;
+  if (userLat) load();
+}));
+
+function fmt(p) { return p.toFixed(3).replace('.', ','); }
+function show(id, v) { document.getElementById(id).classList.toggle('show', v); }
+function setStep(t) { document.getElementById('lstep').textContent = t; }
+
+function haversine(lat1, lon1, lat2, lon2) {
+  const R = 6371, dLat = (lat2-lat1)*Math.PI/180, dLon = (lon2-lon1)*Math.PI/180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+  return R * 2 * Math.asin(Math.sqrt(a));
+}
+
+async function fetchWithFallback(apiUrl) {
+  const proxies = [
+    () => { setStep('Verbinde mit e-control.at …'); return fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(apiUrl)}`, { signal: AbortSignal.timeout(10000) }); },
+    () => { setStep('Fallback 1 …'); return fetch(`https://corsproxy.io/?url=${encodeURIComponent(apiUrl)}`, { signal: AbortSignal.timeout(10000) }); },
+    () => { setStep('Fallback 2 …'); return fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(apiUrl)}`, { signal: AbortSignal.timeout(10000) }); },
+  ];
+  for (const attempt of proxies) {
+    try {
+      const r = await attempt();
+      if (!r.ok) continue;
+      const data = await r.json();
+      if (Array.isArray(data) && data.length > 0) return data;
+    } catch { /* weiter */ }
+  }
+  throw new Error('Verbindung zu e-control.at fehlgeschlagen. Bitte später erneut versuchen.');
+}
+
+function requestGPS() {
+  show('gpsBox', false);
+  show('loading', true);
+  setStep('Standort wird ermittelt …');
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      userLat = pos.coords.latitude;
+      userLng = pos.coords.longitude;
+      document.getElementById('locationSub').textContent = `📍 ${userLat.toFixed(4)}° N, ${userLng.toFixed(4)}° E`;
+      load();
+    },
+    err => {
+      show('loading', false);
+      let msg = 'Standortzugriff verweigert.';
+      if (err.code === 1) msg = 'Standortzugriff verweigert. Bitte in den Browser-Einstellungen erlauben.';
+      else if (err.code === 2) msg = 'Standort konnte nicht ermittelt werden.';
+      else if (err.code === 3) msg = 'Standortabfrage hat zu lange gedauert.';
+      document.getElementById('errBox').textContent = '⚠ ' + msg;
+      show('errBox', true);
+      show('gpsBox', true);
+    },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+  );
+}
+
+function startLoad() {
+  if (!userLat) {
+    requestGPS();
+  } else {
+    // Standort neu ermitteln beim Aktualisieren
+    show('loading', true);
+    setStep('Standort wird aktualisiert …');
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        userLat = pos.coords.latitude;
+        userLng = pos.coords.longitude;
+        document.getElementById('locationSub').textContent = `📍 ${userLat.toFixed(4)}° N, ${userLng.toFixed(4)}° E`;
+        load();
+      },
+      () => load(), // bei Fehler alten Standort behalten
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 }
+    );
+  }
+}
+
+async function load() {
+  show('errBox', false); show('winner', false); show('rh', false); show('empty', false);
+  document.getElementById('bcmp').classList.remove('show');
+  document.getElementById('list').innerHTML = '';
+  document.getElementById('ts').textContent = '';
+  show('loading', true);
+  document.getElementById('refreshBtn').disabled = true;
+  document.querySelectorAll('.rbtn').forEach(b => b.disabled = true);
+
+  try {
+    // radius=15 damit Brenner (Bockfließ, ~3km) sicher enthalten ist
+    const apiUrl = `https://api.e-control.at/sprit/1.0/search/gas-stations/by-address?latitude=${userLat}&longitude=${userLng}&fuelType=SUP&includeClosed=false&radius=15`;
+    const data = await fetchWithFallback(apiUrl);
+    setStep('Verarbeite Daten …');
+
+    let stations = [], brennerStation = null;
+    for (const s of data) {
+      if (!s.location?.latitude) continue;
+      const dist = haversine(userLat, userLng, s.location.latitude, s.location.longitude);
+
+      const sup = (s.prices || []).find(p => p.fuelType === 'SUP');
+      if (!sup?.amount) continue;
+
+      const station = {
+        name: s.name,
+        address: `${s.location.address}, ${s.location.postalCode} ${s.location.city}`,
+        price: sup.amount,
+        distance_km: dist,
+      };
+
+      // Brenner immer erfassen, egal wie weit (Wagramer Straße 16, Bockfließ)
+      const isBrenner = s.name.toLowerCase().includes('brenner') ||
+        (s.location.city?.toLowerCase().includes('bockfließ') && s.location.address?.toLowerCase().includes('wagramer'));
+      if (isBrenner) brennerStation = station;
+
+      // Für die Liste nur innerhalb des gewählten Radius
+      if (dist <= radius) stations.push(station);
+    }
+
+    stations.sort((a, b) => a.price - b.price);
+    show('loading', false);
+    if (!stations.length) { show('empty', true); return; }
+
+    // Winner
+    const best = stations[0];
+    document.getElementById('wPrice').innerHTML = fmt(best.price) + ' <span>€/L</span>';
+    document.getElementById('wName').textContent = best.name;
+    document.getElementById('wAddr').textContent = best.address;
+    document.getElementById('wDist').textContent = `→ ${best.distance_km.toFixed(1)} km entfernt`;
+    show('winner', true);
+
+    // Brenner-Vergleich
+    if (brennerStation?.price) {
+      const diff = brennerStation.price - best.price;
+      const diffAbs = Math.abs(diff);
+      document.getElementById('bPrice').textContent = fmt(brennerStation.price) + ' €/L';
+      const el = document.getElementById('bDiff');
+      if (diff > 0.001) {
+        el.textContent = `Brenner: +${fmt(diffAbs)} €/L teurer`;
+        el.className = 'bdiff red';
+        document.getElementById('bSave').textContent = `Du sparst ~${(diffAbs*LITERS).toFixed(2).replace('.',',')} € pro ${LITERS}L`;
+      } else if (diff < -0.001) {
+        el.textContent = `Brenner: −${fmt(diffAbs)} €/L günstiger`;
+        el.className = 'bdiff green';
+        document.getElementById('bSave').textContent = `Bei Brenner sparst du ~${(diffAbs*LITERS).toFixed(2).replace('.',',')} € pro ${LITERS}L`;
+      } else {
+        el.textContent = '= gleicher Preis';
+        el.className = 'bdiff grey';
+        document.getElementById('bSave').textContent = '';
+      }
+      document.getElementById('bcmp').classList.add('show');
+    }
+
+    // Liste
+    document.getElementById('rcnt').textContent = `${stations.length} Tankstelle${stations.length!==1?'n':''} gefunden`;
+    show('rh', true);
+    const list = document.getElementById('list');
+    stations.forEach((s, i) => {
+      const d = document.createElement('div');
+      d.className = 'scard' + (i===0?' best':'');
+      d.style.animationDelay = `${i*40}ms`;
+      d.innerHTML = `<div class="sname">${s.name}</div>
+        <div class="sprice">${fmt(s.price)} <span class="sunit">€/L</span></div>
+        <div class="saddr">${s.address}</div>
+        <div class="sdist">${s.distance_km.toFixed(1)} km</div>`;
+      list.appendChild(d);
+    });
+
+    const now = new Date();
+    document.getElementById('ts').textContent = `Stand: ${now.toLocaleTimeString('de-AT',{hour:'2-digit',minute:'2-digit'})} Uhr · e-control.at`;
+
+  } catch(e) {
+    show('loading', false);
+    document.getElementById('errBox').textContent = '⚠ ' + e.message;
+    show('errBox', true);
+  } finally {
+    document.getElementById('refreshBtn').disabled = false;
+    document.querySelectorAll('.rbtn').forEach(b => b.disabled = false);
+  }
+}
+
+// Start: GPS anfordern
+if ('geolocation' in navigator) {
+  show('gpsBox', true);
+  // Automatisch GPS anfordern ohne auf Button zu warten
+  requestGPS();
+} else {
+  document.getElementById('locationSub').textContent = '❌ GPS nicht verfügbar';
+  document.getElementById('errBox').textContent = '⚠ Dein Browser unterstützt kein GPS.';
+  show('errBox', true);
+}
+</script>
+</body>
+</html>
